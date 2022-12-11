@@ -11,6 +11,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_compile_options(-fno-rtti)
 add_compile_options(-fno-exceptions)
+add_compile_options(-march=native)
 
 add_executable(day1_1 day1/day1_1.cpp)
 add_executable(day1_2 day1/day1_2.cpp)

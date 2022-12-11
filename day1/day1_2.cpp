@@ -23,6 +23,38 @@ error(const char* what)
   return 1;
 }
 
+#include <immintrin.h>
+
+// this is the version that should be the fastest
+const __m128i pass1_add4 = _mm_setr_epi32(1, 1, 3, 3);
+const __m128i pass2_add4 = _mm_setr_epi32(2, 3, 2, 3);
+const __m128i pass3_add4 = _mm_setr_epi32(0, 2, 2, 3);
+
+void
+simdsort4(unsigned* __restrict v)
+{
+  __m128i a = _mm_load_si128(reinterpret_cast<const __m128i*>(v));
+  __m128i b;
+
+  b = _mm_shuffle_epi32(a, _MM_SHUFFLE(2, 3, 0, 1)); // 10 6 3 9 -> 6 10 9 3
+  b = _mm_cmpgt_epi32(b, a);
+  b = _mm_add_epi32(b, pass1_add4);
+  a = _mm_castps_si128(_mm_permutevar_ps(_mm_castsi128_ps(a), b));
+
+  b = _mm_shuffle_epi32(a, _MM_SHUFFLE(1, 0, 3, 2));
+  b = _mm_cmpgt_epi32(b, a);
+  b = _mm_add_epi32(b, b);
+  b = _mm_add_epi32(b, pass2_add4);
+  a = _mm_castps_si128(_mm_permutevar_ps(_mm_castsi128_ps(a), b));
+
+  b = _mm_shuffle_epi32(a, _MM_SHUFFLE(3, 1, 2, 0));
+  b = _mm_cmpgt_epi32(b, a);
+  b = _mm_add_epi32(b, pass3_add4);
+  __m128 ret = _mm_permutevar_ps(_mm_castsi128_ps(a), b);
+
+  _mm_storeu_ps(reinterpret_cast<float*>(v), ret);
+}
+
 int
 main(int argc, char** argv)
 {
@@ -87,15 +119,15 @@ main(int argc, char** argv)
   unsigned most_calories = 0;
   unsigned current_index = 0;
   unsigned current_most_calories = 0;
+
+  alignas(16) unsigned top3_most_calories[4]{ 0, 0, 0, 0 };
+  // simdsort4(top3_most_calories);
+
   while (true) {
     unsigned calories = extract_unsigned(&p, end);
     // printf("Calories is: %u\n", calories);
 
     current_most_calories += calories;
-    if (current_most_calories > most_calories) {
-      most_calories = current_most_calories;
-      most_calories_index = current_index;
-    }
 
     if (p == end) {
       break;
@@ -108,6 +140,8 @@ main(int argc, char** argv)
       }
       // empty line, move to next
       if (*p == '\n') {
+        top3_most_calories[0] = current_most_calories;
+        simdsort4(top3_most_calories);
         ++current_index;
         current_most_calories = 0;
         ++p;
@@ -115,7 +149,11 @@ main(int argc, char** argv)
     }
   }
 
-  printf("Index with most calories is %u and value is %u\n",
-         most_calories_index,
-         most_calories);
+  // top 3 values
+  printf("top 3 are %d %d %d\n",
+         top3_most_calories[3],
+         top3_most_calories[2],
+         top3_most_calories[1]);
+  printf("Sum of top 3: %d\n",
+         top3_most_calories[3] + top3_most_calories[2] + top3_most_calories[1]);
 }
