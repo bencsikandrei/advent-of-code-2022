@@ -7,7 +7,7 @@
             "request": "launch",
             "program": "${command:cmake.launchTargetPath}",
             "args": [
-                "${workspaceFolder}/day1/day1_small.in"
+                "${workspaceFolder}/day3/day3.in"
             ],
             "cwd": "${workspaceFolder}",
             "MIMode": "gdb",
