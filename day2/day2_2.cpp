@@ -66,13 +66,14 @@ main(int argc, char** argv)
   const char* end = static_cast<const char*>(mapped_file) + mapped_file_size;
   const char* p = static_cast<const char*>(mapped_file);
 
-  int scoresForRPS[]{ 1, 2, 3 };
-  int scoresForOutcome[]{ 0, 3, 6 };
-  int score = 0;
   // X lose, Y draw, Z win
   // 0 lose, 1 draw, 2 win
-  int iLose[]{ 2, 0, 1 };
-  int iWin[]{1, 2, 0};
+  constexpr int lut[3][3]{
+    {3, 1, 2}, // lose
+    {4, 5, 6}, // draw
+    {8, 9, 7} // win
+  };
+  int score = 0;
   while (p < end) {
     // char space char \n
     // last one has no \n
@@ -80,16 +81,7 @@ main(int argc, char** argv)
     p += 2; // space
     char weMust = *p - 'X';
     p += 2;
-    switch (weMust) {
-      case 0: // lose 1 - 0, 2 - 1, 0 - 2
-        score += scoresForRPS[iLose[hePlayed]];
-        break;
-      case 1:
-        score += 3 + scoresForRPS[hePlayed];
-        break;
-      case 2:
-        score += 6 + scoresForRPS[iWin[hePlayed]];
-    }
+    score += lut[weMust][hePlayed];
   }
 
   printf("Score is %d\n", score);
