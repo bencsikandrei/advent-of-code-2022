@@ -77,39 +77,42 @@ main(int argc, char** argv)
     return e;
   };
 
-  uint64_t mask = 0;
-  unsigned prio = 0;
   static_assert('A' < 'a');
 
+  unsigned prio = 0;
+  // use one mask per line, in a group of 3
+  uint64_t masks[3] = { 0 };
+  // the idea is to & together the masks and find the common position
   while (true) {
-    const char* bsn = findbyte(p, end, '\n');
-    const int64_t distance = bsn - p;
-    // it's always %2 == 0
-    for (int i = 0; i < distance / 2; ++i) {
-      const char current = *(p + i);
-      const unsigned bitpos = current - 'A';
-      mask |= (0x01ul << bitpos); // set the i'th bit
-    }
-
-    for (int i = distance / 2; i < distance; ++i) {
-      const char current = *(p + i);
-      const unsigned bitpos = current - 'A';
-
-      const uint64_t bitMaskToCheck = 0x01ul << bitpos;
-      if ((mask & bitMaskToCheck) != 0) {
-        prio += (current <= 'Z') ? (current - 'A' + 27) : (current - 'a' + 1);
-        uint64_t notmask = (0x01ul << bitpos);
-        notmask = ~notmask;
-        mask &= (notmask);
+    const char* bsn;
+    for (int i = 0; i < 3; ++i) {
+      bsn = findbyte(p, end, '\n');
+      const int64_t distance = bsn - p;
+      // it's always %2 == 0
+      for (int j = 0; j < distance; ++j) {
+        const char current = *(p + j);
+        const unsigned bitpos = current - 'A';
+        masks[i] |= (0x01ul << bitpos); // set the i'th bit
       }
+      p = bsn + 1; // skip \n
     }
 
-    if (bsn == end) {
+    uint64_t result = masks[0] & masks[1] & masks[2];
+    // use bsf (or equivalent) to count zeros
+    uint64_t pos = __builtin_ctzl(result);
+
+    // there are some chars between a and Z, plus, the problem wants lower case
+    // letters to have lower prio
+    constexpr unsigned offsetOfLowerCase = ('a' - 'Z' + 25);
+    prio += (pos < 26 ? pos + 27 : pos - offsetOfLowerCase + 1);
+
+    if (bsn >= end) {
       break;
     }
 
-    p = bsn + 1;
-    mask = 0;
+    for (int i = 0; i < 3; ++i) {
+      masks[i] = 0u;
+    }
   }
 
   printf("Sum is %u\n", prio);

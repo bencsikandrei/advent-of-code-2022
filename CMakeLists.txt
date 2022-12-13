@@ -20,4 +20,4 @@ add_executable(day2_1 day2/day2_1.cpp)
 add_executable(day2_2 day2/day2_2.cpp)
 
 add_executable(day3_1 day3/day3_1.cpp)
-# add_executable(day2_2 day2/day2_2.cpp)
+add_executable(day3_2 day3/day3_2.cpp)
