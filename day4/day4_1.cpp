@@ -1,6 +1,7 @@
 #include "../at_scope_exit.h"
 #include "../io.h"
 
+#include <cstdint>
 #include <cstdio>
 
 // linux stuff start
@@ -10,18 +11,18 @@
 #include <unistd.h>
 // linux stuff end
 
-void
-usage(const char* exe)
-{
-  printf("%s <input file>\n", exe);
-  printf("\twhere input file has one integer per line or empty lines\n");
-}
-
 int
 error(const char* what)
 {
   printf("Error: %s\n", what);
   return 1;
+}
+
+void
+usage(const char* exe)
+{
+  printf("%s <input file>\n", exe);
+  printf("\twhere input file has one integer per line or empty lines\n");
 }
 
 int
@@ -67,39 +68,39 @@ main(int argc, char** argv)
   const char* end = static_cast<const char*>(mapped_file) + mapped_file_size;
   const char* p = static_cast<const char*>(mapped_file);
 
-  unsigned most_calories_index = 0;
-  unsigned most_calories = 0;
-  unsigned current_index = 0;
-  unsigned current_most_calories = 0;
-  while (true) {
-    unsigned calories = afb::extract_unsigned(&p, end);
-    // printf("Calories is: %u\n", calories);
+  const auto fully_contains =
+    [](long int a1, long int b1, long int a2, long int b2) {
+      // [a1 ---- b1]   1
+      // [   a2 --b2]
+      return (a2 >= a1 && b1 >= b2) // fully inside
+             || (a1 >= a2 && b2 >= b1);
+      // [a1 ---- b1]   2
+      // [a2 --------b2]
+    };
+  unsigned fully_contained_pairs = 0;
+  while (p != end) {
+    // 14-50,14-50
+    // 43-44,43-87
+    // int dash int comma int dash int \n
+    // last line same, but not \n
+    unsigned a1, b1, a2, b2;
 
-    current_most_calories += calories;
-    if (current_most_calories > most_calories) {
-      most_calories = current_most_calories;
-      most_calories_index = current_index;
-    }
+    a1 = afb::extract_unsigned(&p, end);
+    ++p; // dash
+    b1 = afb::extract_unsigned(&p, end);
+    ++p; // comma
+
+    a2 = afb::extract_unsigned(&p, end);
+    ++p; // dash
+    b2 = afb::extract_unsigned(&p, end);
+
+    fully_contained_pairs += fully_contains(a1, b1, a2, b2);
 
     if (p == end) {
       break;
     }
-
-    if (*p == '\n') {
-      ++p;
-      if (p == end) {
-        break;
-      }
-      // empty line, move to next
-      if (*p == '\n') {
-        ++current_index;
-        current_most_calories = 0;
-        ++p;
-      }
-    }
+    ++p; // \n
   }
 
-  printf("Index with most calories is %u and value is %u\n",
-         most_calories_index,
-         most_calories);
+  printf("Fully contained pairs: %u\n", fully_contained_pairs);
 }

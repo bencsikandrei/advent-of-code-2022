@@ -1,4 +1,5 @@
 #include "../at_scope_exit.h"
+#include "../io.h"
 
 #include <cstdio>
 
@@ -98,23 +99,6 @@ main(int argc, char** argv)
   const char* end = static_cast<const char*>(mapped_file) + mapped_file_size;
   const char* p = static_cast<const char*>(mapped_file);
 
-  // we only need unsinged values
-  auto extract_unsigned = [](const char** data, const char* end) -> unsigned {
-    auto digit_value = [](char c) -> unsigned {
-      return static_cast<unsigned>(c - '0');
-    };
-    const char* p = *data;
-    unsigned res = digit_value(*p);
-    unsigned digit;
-    ++p;
-    while (p != end && (digit = digit_value(*p)) <= 9) {
-      res = res * 10 + digit;
-      ++p;
-    }
-    *data = p;
-    return res;
-  };
-
   unsigned most_calories_index = 0;
   unsigned most_calories = 0;
   unsigned current_index = 0;
@@ -124,7 +108,7 @@ main(int argc, char** argv)
   // simdsort4(top3_most_calories);
 
   while (true) {
-    unsigned calories = extract_unsigned(&p, end);
+    unsigned calories = afb::extract_unsigned(&p, end);
     // printf("Calories is: %u\n", calories);
 
     current_most_calories += calories;
